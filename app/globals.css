@@ -386,6 +386,11 @@ h1 {
   box-shadow: inset 0 -0.38em 0 #bfe7d5;
 }
 
+.player-name-token {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .player-separator {
   color: var(--muted);
   font-weight: 500;
@@ -517,7 +522,7 @@ h1 {
 
 .participant-table {
   width: 100%;
-  min-width: 720px;
+  min-width: 520px;
   border-collapse: collapse;
 }
 
@@ -551,25 +556,24 @@ h1 {
   line-height: 1.35;
 }
 
-.club-player-cell {
-  color: #0d5f46;
-  font-weight: 800;
+.participant-name-cell span {
+  display: inline;
+  margin-top: 0;
+  color: inherit;
+  font-size: inherit;
 }
 
-.participant-type {
-  display: inline-flex;
-  align-items: center;
-  min-height: 24px;
-  padding: 0 8px;
-  background: #eef2f0;
+.participant-name-cell .player-name-token {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.participant-name-cell .player-separator {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
 }
 
-.participant-type-combined {
-  background: #edf7f3;
-  color: var(--accent);
+.participant-name-cell .club-player-highlight {
+  color: #0d5f46;
 }
 
 .draw-list {
@@ -1083,18 +1087,6 @@ code {
 
   .participant-table td:nth-child(2)::before {
     content: "참가자";
-  }
-
-  .participant-table td:nth-child(3)::before {
-    content: "클럽 선수";
-  }
-
-  .participant-table td:nth-child(4)::before {
-    content: "팀";
-  }
-
-  .participant-table td:nth-child(5)::before {
-    content: "구분";
   }
 
   .draw-toggle {

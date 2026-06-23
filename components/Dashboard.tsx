@@ -21,7 +21,6 @@ type Props = {
 };
 
 type StatusFilter = "all" | "active" | "ended";
-type ClubFilter = "all" | "solo";
 type MatchDisplay = {
   time?: string;
   court?: string;
@@ -47,7 +46,6 @@ type ClubParticipant = {
   teamName: string;
   players: string[];
   clubPlayerIndexes: number[];
-  isCombinedClub: boolean;
 };
 
 const DATA_MISSING_MESSAGE = "수집된 데이터가 없습니다. GitHub Actions 또는 npm run data:refresh로 데이터를 생성해 주세요.";
@@ -156,22 +154,10 @@ function isActiveTournament(tournament: TournamentResult) {
   return tournament.status !== "종료";
 }
 
-function hasSoloClubDraw(tournament: TournamentResult, clubName: string) {
-  return tournament.draws.some((draw) =>
-    draw.standings.some((standing) => standing.teamName === clubName || standing.teamName.endsWith(` ${clubName}`))
-  );
-}
-
-function filterTournaments(
-  tournaments: TournamentResult[],
-  statusFilter: StatusFilter,
-  clubFilter: ClubFilter,
-  clubName: string
-) {
+function filterTournaments(tournaments: TournamentResult[], statusFilter: StatusFilter) {
   return tournaments.filter((tournament) => {
     if (statusFilter === "active" && !isActiveTournament(tournament)) return false;
     if (statusFilter === "ended" && tournament.status !== "종료") return false;
-    if (clubFilter === "solo" && !hasSoloClubDraw(tournament, clubName)) return false;
     return true;
   });
 }
@@ -187,16 +173,18 @@ function EmptyState({ hasSnapshot }: { hasSnapshot: boolean }) {
   );
 }
 
-function normalizeClubCompareValue(value: string) {
-  return value.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
+function normalizeClubCompareValue(value?: string | null) {
+  return (value ?? "").normalize("NFKC").replace(/\s+/g, "").toLowerCase();
 }
 
-function getClubPlayerIndexes(teamName: string, players: string[], clubName: string) {
+function getClubPlayerIndexes(teamName: string | undefined, players: string[], clubName: string) {
   if (players.length === 0) return [];
 
   const clubKey = normalizeClubCompareValue(clubName);
+  if (!clubKey) return [];
+
   const teamKey = normalizeClubCompareValue(teamName);
-  const teamClubs = teamName
+  const teamClubs = (teamName ?? "")
     .split(/[&＆]/)
     .map((club) => club.trim())
     .filter(Boolean);
@@ -233,8 +221,7 @@ function createClubParticipant(draw: ClubDraw, standing: StandingRow, clubName: 
     category: draw.category.title,
     teamName: standing.teamName,
     players,
-    clubPlayerIndexes: getClubPlayerIndexes(standing.teamName, players, clubName),
-    isCombinedClub: standing.isCombinedClub
+    clubPlayerIndexes: getClubPlayerIndexes(standing.teamName, players, clubName)
   };
 }
 
@@ -267,14 +254,6 @@ function getParticipantName(participant: ClubParticipant) {
   return participant.players.length > 0 ? participant.players.join(" / ") : participant.teamName;
 }
 
-function getClubPlayerName(participant: ClubParticipant) {
-  const clubPlayers = participant.clubPlayerIndexes
-    .map((index) => participant.players[index])
-    .filter(Boolean);
-
-  return clubPlayers.length > 0 ? clubPlayers.join(" / ") : getParticipantName(participant);
-}
-
 function ParticipantPlayerNames({ participant }: { participant: ClubParticipant }) {
   if (participant.players.length === 0) {
     return <strong>{participant.teamName}</strong>;
@@ -283,9 +262,9 @@ function ParticipantPlayerNames({ participant }: { participant: ClubParticipant 
   return (
     <strong>
       {participant.players.map((player, index) => (
-        <span key={`${participant.key}-${player}-${index}`}>
-          {index > 0 ? <span className="player-separator"> / </span> : null}
+        <span key={`${participant.key}-${player}-${index}`} className="player-name-token">
           <span className={participant.clubPlayerIndexes.includes(index) ? "club-player-highlight" : ""}>{player}</span>
+          {index < participant.players.length - 1 ? <span className="player-separator"> / </span> : null}
         </span>
       ))}
     </strong>
@@ -365,9 +344,6 @@ function DetailParticipantSummary({ tournament, clubName }: { tournament: Tourna
             <tr>
               <th>대진</th>
               <th>참가자</th>
-              <th>{clubName} 선수</th>
-              <th>팀</th>
-              <th>구분</th>
             </tr>
           </thead>
           <tbody>
@@ -378,13 +354,6 @@ function DetailParticipantSummary({ tournament, clubName }: { tournament: Tourna
                 </td>
                 <td className="participant-name-cell">
                   <ParticipantPlayerNames participant={participant} />
-                </td>
-                <td className="club-player-cell">{getClubPlayerName(participant)}</td>
-                <td>{participant.teamName}</td>
-                <td>
-                  <span className={`participant-type ${participant.isCombinedClub ? "participant-type-combined" : ""}`}>
-                    {participant.isCombinedClub ? "연합" : "단독"}
-                  </span>
                 </td>
               </tr>
             ))}
@@ -716,7 +685,6 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
   const [loadMessage, setLoadMessage] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [clubFilter, setClubFilter] = useState<ClubFilter>("all");
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
   const clubName = latestSnapshot?.scope.clubName || clubInput.trim() || initialClubName;
   const selectedProvince = getProvinceByOrgId(provinceOrgId) || getProvinceByOrgId(initialProvinceOrgId);
@@ -763,8 +731,8 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
   }
 
   const filtered = useMemo(
-    () => filterTournaments(latestSnapshot?.tournaments ?? [], statusFilter, clubFilter, clubName),
-    [clubFilter, clubName, statusFilter, latestSnapshot?.tournaments]
+    () => filterTournaments(latestSnapshot?.tournaments ?? [], statusFilter),
+    [statusFilter, latestSnapshot?.tournaments]
   );
   const selectedTournament = filtered.find((tournament) => tournament.id === selectedTournamentId) || null;
 
@@ -870,7 +838,7 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
 
       {latestSnapshot?.errors.length ? <div className="notice">일부 수집 경고 {latestSnapshot.errors.length}건이 있습니다.</div> : null}
 
-      <section className="toolbar" aria-label="대진 필터">
+      <section className="toolbar" aria-label="대회 상태 필터">
         <div className="segmented">
           <button className={statusFilter === "all" ? "active" : ""} onClick={() => setStatusFilter("all")}>
             전체
@@ -880,15 +848,6 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
           </button>
           <button className={statusFilter === "ended" ? "active" : ""} onClick={() => setStatusFilter("ended")}>
             종료
-          </button>
-        </div>
-
-        <div className="segmented">
-          <button className={clubFilter === "all" ? "active" : ""} onClick={() => setClubFilter("all")}>
-            연합 포함
-          </button>
-          <button className={clubFilter === "solo" ? "active" : ""} onClick={() => setClubFilter("solo")}>
-            단독만
           </button>
         </div>
       </section>
