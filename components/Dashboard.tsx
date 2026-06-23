@@ -45,10 +45,14 @@ type ClubParticipant = {
   key: string;
   category: string;
   teamName: string;
-  players: string;
+  players: string[];
+  clubPlayerIndexes: number[];
+  isCombinedClub: boolean;
 };
 
 const DATA_MISSING_MESSAGE = "수집된 데이터가 없습니다. GitHub Actions 또는 npm run data:refresh로 데이터를 생성해 주세요.";
+const DATA_SOURCE_TEXT = "BKPLAY 지역별 대회정보";
+const DEFAULT_REFRESH_TIMES_KST = ["10:00", "14:00", "18:00"];
 
 async function fetchStaticJson<T>(path: string): Promise<T> {
   const response = await fetch(path, {
@@ -113,6 +117,41 @@ function getCollectionRangeText(manifest: StaticDataManifest | null) {
   )}`;
 }
 
+function getCollectionBasisText(manifest: StaticDataManifest | null) {
+  const lookbackDays = manifest?.scope.lookbackDays ?? 30;
+  const lookaheadDays = manifest?.scope.lookaheadDays ?? 30;
+
+  return `수집일 기준 과거 ${lookbackDays}일 ~ 미래 ${lookaheadDays}일 대회`;
+}
+
+function formatKoreanRefreshTime(value: string) {
+  const [hourText, minuteText = "00"] = value.split(":");
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  if (!Number.isFinite(hour) || hour < 0 || hour > 23) {
+    return value;
+  }
+
+  const period = hour < 12 ? "오전" : "오후";
+  const hour12 = hour % 12 || 12;
+  const minuteSuffix = Number.isFinite(minute) && minute > 0 ? ` ${minute}분` : "";
+
+  return `${period} ${hour12}시${minuteSuffix}`;
+}
+
+function getRefreshTimes(manifest: StaticDataManifest | null) {
+  return manifest?.scope.refreshTimesKst?.length ? manifest.scope.refreshTimesKst : DEFAULT_REFRESH_TIMES_KST;
+}
+
+function getRefreshScheduleText(manifest: StaticDataManifest | null) {
+  return `매일 ${getRefreshTimes(manifest).map(formatKoreanRefreshTime).join(", ")} 갱신`;
+}
+
+function getRefreshSummaryText(manifest: StaticDataManifest | null) {
+  return `BKPLAY 기준 · 매일 ${getRefreshTimes(manifest).length}회 갱신`;
+}
+
 function isActiveTournament(tournament: TournamentResult) {
   return tournament.status !== "종료";
 }
@@ -148,40 +187,109 @@ function EmptyState({ hasSnapshot }: { hasSnapshot: boolean }) {
   );
 }
 
-function getClubParticipants(tournament: TournamentResult): ClubParticipant[] {
+function normalizeClubCompareValue(value: string) {
+  return value.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
+}
+
+function getClubPlayerIndexes(teamName: string, players: string[], clubName: string) {
+  if (players.length === 0) return [];
+
+  const clubKey = normalizeClubCompareValue(clubName);
+  const teamKey = normalizeClubCompareValue(teamName);
+  const teamClubs = teamName
+    .split(/[&＆]/)
+    .map((club) => club.trim())
+    .filter(Boolean);
+
+  if (teamClubs.length <= 1) {
+    return teamKey.includes(clubKey) ? players.map((_, index) => index) : [];
+  }
+
+  const matchedClubIndexes = teamClubs
+    .map((club, index) => ({
+      index,
+      isMatch: normalizeClubCompareValue(club).includes(clubKey)
+    }))
+    .filter((club) => club.isMatch)
+    .map((club) => club.index);
+
+  if (matchedClubIndexes.length === 0) {
+    return teamKey.includes(clubKey) ? players.map((_, index) => index) : [];
+  }
+
+  if (teamClubs.length === players.length) {
+    return matchedClubIndexes.filter((index) => index < players.length);
+  }
+
+  return teamKey.includes(clubKey) ? players.map((_, index) => index) : [];
+}
+
+function createClubParticipant(draw: ClubDraw, standing: StandingRow, clubName: string): ClubParticipant {
+  const players = standing.players.filter(Boolean);
+  const key = `${draw.category.title}:${standing.teamName}:${players.join("/")}`;
+
+  return {
+    key,
+    category: draw.category.title,
+    teamName: standing.teamName,
+    players,
+    clubPlayerIndexes: getClubPlayerIndexes(standing.teamName, players, clubName),
+    isCombinedClub: standing.isCombinedClub
+  };
+}
+
+function getClubParticipants(tournament: TournamentResult, clubName: string): ClubParticipant[] {
   const participantMap = new Map<string, ClubParticipant>();
 
   tournament.draws.forEach((draw) => {
     draw.standings
       .filter((standing) => standing.includesClub)
       .forEach((standing) => {
-        const players = standing.players.join(" / ");
-        const key = `${draw.category.title}:${standing.teamName}:${players}`;
-        participantMap.set(key, {
-          key,
-          category: draw.category.title,
-          teamName: standing.teamName,
-          players
-        });
+        const participant = createClubParticipant(draw, standing, clubName);
+        participantMap.set(participant.key, participant);
       });
   });
 
   return [...participantMap.values()];
 }
 
-function getDrawClubParticipants(draw: ClubDraw): ClubParticipant[] {
+function getDrawClubParticipants(draw: ClubDraw, clubName: string): ClubParticipant[] {
   return draw.standings
     .filter((standing) => standing.includesClub)
-    .map((standing) => ({
-      key: `${draw.category.title}:${standing.teamName}:${standing.players.join("/")}`,
-      category: draw.category.title,
-      teamName: standing.teamName,
-      players: standing.players.join(" / ")
-    }));
+    .map((standing) => createClubParticipant(draw, standing, clubName));
 }
 
 function getDrawKey(draw: ClubDraw) {
   return draw.drawId || `${draw.category.playingCategoryId}-${draw.groupId || draw.groupName || "group"}`;
+}
+
+function getParticipantName(participant: ClubParticipant) {
+  return participant.players.length > 0 ? participant.players.join(" / ") : participant.teamName;
+}
+
+function getClubPlayerName(participant: ClubParticipant) {
+  const clubPlayers = participant.clubPlayerIndexes
+    .map((index) => participant.players[index])
+    .filter(Boolean);
+
+  return clubPlayers.length > 0 ? clubPlayers.join(" / ") : getParticipantName(participant);
+}
+
+function ParticipantPlayerNames({ participant }: { participant: ClubParticipant }) {
+  if (participant.players.length === 0) {
+    return <strong>{participant.teamName}</strong>;
+  }
+
+  return (
+    <strong>
+      {participant.players.map((player, index) => (
+        <span key={`${participant.key}-${player}-${index}`}>
+          {index > 0 ? <span className="player-separator"> / </span> : null}
+          <span className={participant.clubPlayerIndexes.includes(index) ? "club-player-highlight" : ""}>{player}</span>
+        </span>
+      ))}
+    </strong>
+  );
 }
 
 function TournamentListCard({
@@ -193,8 +301,8 @@ function TournamentListCard({
   clubName: string;
   onSelect: () => void;
 }) {
-  const participants = getClubParticipants(tournament);
-  const visibleParticipants = participants.slice(0, 6);
+  const participants = getClubParticipants(tournament, clubName);
+  const visibleParticipants = participants.slice(0, 4);
   const hiddenCount = Math.max(0, participants.length - visibleParticipants.length);
 
   return (
@@ -214,19 +322,23 @@ function TournamentListCard({
       </div>
 
       <div className="participant-block">
-        <span>출전자</span>
-        <div className="participant-list">
+        <span>출전자 {participants.length}팀</span>
+        <div className="participant-inline-list">
           {visibleParticipants.length > 0 ? (
             visibleParticipants.map((participant) => (
-              <span key={participant.key}>
-                {participant.category} · {participant.teamName}
-                {participant.players ? ` (${participant.players})` : ""}
+              <span key={participant.key} className="participant-inline-item">
+                <ParticipantPlayerNames participant={participant} />
+                <small>{participant.category}</small>
               </span>
             ))
           ) : (
-            <span>{clubName} 포함 팀</span>
+            <span className="participant-inline-item">
+              <strong>{clubName} 포함 팀</strong>
+            </span>
           )}
-          {hiddenCount > 0 ? <span>외 {hiddenCount}개</span> : null}
+          {hiddenCount > 0 ? (
+            <span className="participant-inline-more">외 {hiddenCount}팀</span>
+          ) : null}
         </div>
       </div>
 
@@ -239,7 +351,7 @@ function TournamentListCard({
 }
 
 function DetailParticipantSummary({ tournament, clubName }: { tournament: TournamentResult; clubName: string }) {
-  const participants = getClubParticipants(tournament);
+  const participants = getClubParticipants(tournament, clubName);
 
   return (
     <section className="detail-participants">
@@ -247,14 +359,37 @@ function DetailParticipantSummary({ tournament, clubName }: { tournament: Tourna
         <h3>{clubName} 출전자</h3>
         <span>{participants.length}팀</span>
       </div>
-      <div className="detail-participant-grid">
-        {participants.map((participant) => (
-          <div key={participant.key} className="detail-participant-item">
-            <span>{participant.category}</span>
-            <strong>{participant.teamName}</strong>
-            {participant.players ? <p>{participant.players}</p> : null}
-          </div>
-        ))}
+      <div className="participant-table-wrap">
+        <table className="participant-table">
+          <thead>
+            <tr>
+              <th>대진</th>
+              <th>참가자</th>
+              <th>{clubName} 선수</th>
+              <th>팀</th>
+              <th>구분</th>
+            </tr>
+          </thead>
+          <tbody>
+            {participants.map((participant) => (
+              <tr key={participant.key}>
+                <td>
+                  <strong>{participant.category}</strong>
+                </td>
+                <td className="participant-name-cell">
+                  <ParticipantPlayerNames participant={participant} />
+                </td>
+                <td className="club-player-cell">{getClubPlayerName(participant)}</td>
+                <td>{participant.teamName}</td>
+                <td>
+                  <span className={`participant-type ${participant.isCombinedClub ? "participant-type-combined" : ""}`}>
+                    {participant.isCombinedClub ? "연합" : "단독"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </section>
   );
@@ -476,7 +611,7 @@ function DrawPanel({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const participants = getDrawClubParticipants(draw);
+  const participants = getDrawClubParticipants(draw, clubName);
 
   return (
     <article className={`draw-panel ${expanded ? "draw-panel-expanded" : ""}`}>
@@ -676,19 +811,37 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
         <p>미리 준비된 대회 데이터에서 입력한 클럽명이 포함된 대진을 빠르게 조회합니다.</p>
       </section>
 
-      <section className="data-meta-panel" aria-label="수집 데이터 정보">
-        <div>
-          <span>수집 기간</span>
-          <strong>{getCollectionRangeText(manifest)}</strong>
+      <details className="data-meta-disclosure">
+        <summary>
+          <span>데이터 안내</span>
+          <strong>{getRefreshSummaryText(manifest)}</strong>
+        </summary>
+        <div className="data-meta-panel" aria-label="수집 데이터 정보">
+          <div>
+            <span>데이터 출처</span>
+            <strong>{DATA_SOURCE_TEXT}</strong>
+          </div>
+          <div>
+            <span>수집 기준</span>
+            <strong>{getCollectionBasisText(manifest)}</strong>
+          </div>
+          <div>
+            <span>수집 기간</span>
+            <strong>{getCollectionRangeText(manifest)}</strong>
+          </div>
+          <div>
+            <span>갱신 시간</span>
+            <strong>{getRefreshScheduleText(manifest)}</strong>
+          </div>
+          <div>
+            <span>전체 수집 데이터</span>
+            <strong>
+              대회 {formatNumber(manifest?.stats.tournamentCount)}개 · 대진 {formatNumber(manifest?.stats.drawCount)}개 · 클럽{" "}
+              {formatNumber(manifest?.stats.clubCount)}개
+            </strong>
+          </div>
         </div>
-        <div>
-          <span>전체 수집 데이터</span>
-          <strong>
-            대회 {formatNumber(manifest?.stats.tournamentCount)}개 · 대진 {formatNumber(manifest?.stats.drawCount)}개 · 클럽{" "}
-            {formatNumber(manifest?.stats.clubCount)}개
-          </strong>
-        </div>
-      </section>
+      </details>
 
       <section className="summary-band">
         <div>

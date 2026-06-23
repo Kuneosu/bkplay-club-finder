@@ -25,6 +25,7 @@ BKPLAY_MAX_TOURNAMENTS=120
 BKPLAY_MAX_CATEGORIES=10000
 BKPLAY_CATEGORY_CONCURRENCY=8
 BKPLAY_REQUEST_DELAY_MS=40
+BKPLAY_REFRESH_TIMES_KST=10:00,14:00,18:00
 ```
 
 ## 데이터 수집
@@ -43,7 +44,8 @@ public/data/club-index.json
 public/data/tournaments/{tnmtId}.json
 ```
 
-GitHub Actions workflow `.github/workflows/refresh-bkplay-data.yml`은 6시간마다 실행되며, 데이터가 변경되면 `public/data`를 커밋합니다.
+GitHub Actions workflow `.github/workflows/refresh-bkplay-data.yml`은 매일 10시, 14시, 18시(KST)에 실행되며, 데이터가 변경되면 `public/data`를 커밋합니다.
+기본 수집 범위는 BKPLAY 지역별 대회정보에서 수집일 기준 과거 30일 ~ 미래 30일 대회입니다.
 
 지원 지역 ID는 BKPLAY 지역별 대회정보 기준입니다.
 

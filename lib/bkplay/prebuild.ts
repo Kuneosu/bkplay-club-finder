@@ -305,6 +305,7 @@ export async function buildStaticData(options?: { now?: Date; config?: PrebuildC
         lookaheadDays: config.lookaheadDays,
         searchStartDate,
         searchEndDate,
+        refreshTimesKst: config.refreshTimesKst,
         maxPages: config.maxPages,
         maxTournaments: config.maxTournaments,
         maxCategories: config.maxCategories

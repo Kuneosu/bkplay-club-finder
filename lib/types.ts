@@ -116,6 +116,7 @@ export type StaticDataManifest = {
     lookaheadDays: number;
     searchStartDate?: string;
     searchEndDate?: string;
+    refreshTimesKst?: string[];
     maxPages: number;
     maxTournaments: number;
     maxCategories: number;

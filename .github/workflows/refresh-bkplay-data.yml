@@ -3,7 +3,8 @@ name: Refresh BKPLAY data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *"
+    # 한국 시간 10:00, 14:00, 18:00
+    - cron: "0 1,5,9 * * *"
 
 permissions:
   contents: write
@@ -31,6 +32,7 @@ jobs:
           BKPLAY_PROVINCE_ORG_IDS: "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18"
           BKPLAY_LOOKBACK_DAYS: "30"
           BKPLAY_LOOKAHEAD_DAYS: "30"
+          BKPLAY_REFRESH_TIMES_KST: "10:00,14:00,18:00"
 
       - name: Run tests
         run: npm run test
