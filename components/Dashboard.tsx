@@ -673,7 +673,7 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
             {isSearching ? "조회 중" : "조회"}
           </button>
         </form>
-        <p>GitHub Actions가 미리 수집한 데이터에서 입력한 클럽명이 포함된 대진을 조회합니다.</p>
+        <p>미리 준비된 대회 데이터에서 입력한 클럽명이 포함된 대진을 빠르게 조회합니다.</p>
       </section>
 
       <section className="data-meta-panel" aria-label="수집 데이터 정보">

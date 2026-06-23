@@ -29,8 +29,8 @@ jobs:
         run: npm run data:refresh
         env:
           BKPLAY_PROVINCE_ORG_IDS: "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18"
-          BKPLAY_LOOKBACK_DAYS: "180"
-          BKPLAY_LOOKAHEAD_DAYS: "180"
+          BKPLAY_LOOKBACK_DAYS: "30"
+          BKPLAY_LOOKAHEAD_DAYS: "30"
 
       - name: Run tests
         run: npm run test
