@@ -48,9 +48,40 @@ type ClubParticipant = {
   clubPlayerIndexes: number[];
 };
 
+const TOURNAMENT_QUERY_PARAM = "tournament";
 const DATA_MISSING_MESSAGE = "수집된 데이터가 없습니다. GitHub Actions 또는 npm run data:refresh로 데이터를 생성해 주세요.";
 const DATA_SOURCE_TEXT = "BKPLAY 지역별 대회정보";
 const DEFAULT_REFRESH_TIMES_KST = ["10:00", "14:00", "18:00"];
+
+function getTournamentIdFromLocation() {
+  if (typeof window === "undefined") return null;
+
+  return new URL(window.location.href).searchParams.get(TOURNAMENT_QUERY_PARAM);
+}
+
+function updateTournamentHistory(tournamentId: string | null, mode: "push" | "replace", view: "list" | "detail" | "external-detail") {
+  if (typeof window === "undefined") return;
+
+  const url = new URL(window.location.href);
+  if (tournamentId) {
+    url.searchParams.set(TOURNAMENT_QUERY_PARAM, tournamentId);
+  } else {
+    url.searchParams.delete(TOURNAMENT_QUERY_PARAM);
+  }
+
+  const nextState = {
+    ...(window.history.state || {}),
+    bkplayView: view,
+    bkplayTournamentId: tournamentId
+  };
+  const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+
+  if (mode === "push") {
+    window.history.pushState(nextState, "", nextUrl);
+  } else {
+    window.history.replaceState(nextState, "", nextUrl);
+  }
+}
 
 async function fetchStaticJson<T>(path: string): Promise<T> {
   const response = await fetch(path, {
@@ -689,9 +720,25 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
   const [loadMessage, setLoadMessage] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
+  const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(() => getTournamentIdFromLocation());
   const clubName = latestSnapshot?.scope.clubName || clubInput.trim() || initialClubName;
   const selectedProvince = getProvinceByOrgId(provinceOrgId) || getProvinceByOrgId(initialProvinceOrgId);
+
+  useEffect(() => {
+    const initialTournamentId = getTournamentIdFromLocation();
+    const initialView = initialTournamentId ? "external-detail" : "list";
+    updateTournamentHistory(initialTournamentId, "replace", initialView);
+
+    function handlePopState() {
+      setSelectedTournamentId(getTournamentIdFromLocation());
+    }
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -723,6 +770,7 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
     setIsSearching(true);
     setLoadMessage(null);
     setSelectedTournamentId(null);
+    updateTournamentHistory(null, "replace", "list");
 
     try {
       const snapshot = await searchStaticData(nextClubName, provinceOrgId);
@@ -739,6 +787,32 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
     [statusFilter, latestSnapshot?.tournaments]
   );
   const selectedTournament = filtered.find((tournament) => tournament.id === selectedTournamentId) || null;
+
+  function selectTournament(tournamentId: string) {
+    setSelectedTournamentId(tournamentId);
+    updateTournamentHistory(tournamentId, "push", "detail");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function changeStatusFilter(nextStatusFilter: StatusFilter) {
+    setStatusFilter(nextStatusFilter);
+
+    if (selectedTournamentId) {
+      setSelectedTournamentId(null);
+      updateTournamentHistory(null, "replace", "list");
+    }
+  }
+
+  function returnToTournamentList() {
+    if (typeof window !== "undefined" && window.history.state?.bkplayView === "detail") {
+      window.history.back();
+      return;
+    }
+
+    setSelectedTournamentId(null);
+    updateTournamentHistory(null, "replace", "list");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   return (
     <main className="page">
@@ -844,13 +918,13 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
 
       <section className="toolbar" aria-label="대회 상태 필터">
         <div className="segmented">
-          <button className={statusFilter === "all" ? "active" : ""} onClick={() => setStatusFilter("all")}>
+          <button className={statusFilter === "all" ? "active" : ""} onClick={() => changeStatusFilter("all")}>
             전체
           </button>
-          <button className={statusFilter === "active" ? "active" : ""} onClick={() => setStatusFilter("active")}>
+          <button className={statusFilter === "active" ? "active" : ""} onClick={() => changeStatusFilter("active")}>
             예정·진행
           </button>
-          <button className={statusFilter === "ended" ? "active" : ""} onClick={() => setStatusFilter("ended")}>
+          <button className={statusFilter === "ended" ? "active" : ""} onClick={() => changeStatusFilter("ended")}>
             종료
           </button>
         </div>
@@ -859,7 +933,7 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
       <section className="content-list">
         {selectedTournament ? (
           <div className="detail-view">
-            <button type="button" className="back-button" onClick={() => setSelectedTournamentId(null)}>
+            <button type="button" className="back-button" onClick={returnToTournamentList}>
               대회 목록
             </button>
             <DrawCard tournament={selectedTournament} clubName={clubName} />
@@ -871,7 +945,7 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
                 key={tournament.id}
                 tournament={tournament}
                 clubName={clubName}
-                onSelect={() => setSelectedTournamentId(tournament.id)}
+                onSelect={() => selectTournament(tournament.id)}
               />
             ))}
           </div>
