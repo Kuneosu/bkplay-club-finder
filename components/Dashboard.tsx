@@ -555,9 +555,13 @@ function MatchItem({ match, clubName }: { match: MatchRow; clubName: string }) {
         <div className="match-teams">
           {display.firstTeam && display.secondTeam ? (
             <>
-              <span className={includesClub(display.firstTeam, clubName) ? "club-team" : ""}>{display.firstTeam}</span>
+              <span className={`match-team-name ${includesClub(display.firstTeam, clubName) ? "club-team" : ""}`}>
+                {display.firstTeam}
+              </span>
               <b>vs</b>
-              <span className={includesClub(display.secondTeam, clubName) ? "club-team" : ""}>{display.secondTeam}</span>
+              <span className={`match-team-name ${includesClub(display.secondTeam, clubName) ? "club-team" : ""}`}>
+                {display.secondTeam}
+              </span>
             </>
           ) : (
             <span className="match-fallback">{match.text}</span>

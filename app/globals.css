@@ -285,12 +285,14 @@ h1 {
 .content-list {
   display: grid;
   gap: 18px;
+  min-width: 0;
 }
 
 .tournament-list,
 .detail-view {
   display: grid;
   gap: 14px;
+  min-width: 0;
 }
 
 .tournament-list-card {
@@ -427,6 +429,8 @@ h1 {
 }
 
 .tournament-card {
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--line);
   background: var(--surface);
 }
@@ -579,10 +583,13 @@ h1 {
 .draw-list {
   display: grid;
   gap: 12px;
+  min-width: 0;
   padding: 18px;
 }
 
 .draw-panel {
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--line);
   background: #ffffff;
 }
@@ -661,9 +668,13 @@ h1 {
 
 .draw-body {
   display: grid;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .draw-matrix-wrap {
+  min-width: 0;
+  max-width: 100%;
   padding: 16px;
   border-bottom: 1px solid var(--line);
   background: #fbfcfc;
@@ -688,7 +699,11 @@ h1 {
 }
 
 .draw-matrix-scroll {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--line);
   background: var(--surface);
 }
@@ -802,6 +817,7 @@ td span {
 .match-list {
   display: grid;
   gap: 10px;
+  min-width: 0;
   padding: 16px;
   background: #f7faf8;
 }
@@ -852,6 +868,7 @@ td span {
   align-content: center;
   gap: 8px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .match-teams {
@@ -862,6 +879,11 @@ td span {
   font-size: 16px;
   font-weight: 700;
   line-height: 1.45;
+}
+
+.match-team-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .match-teams b {
@@ -1105,6 +1127,29 @@ code {
     padding: 12px;
   }
 
+  .draw-matrix-scroll {
+    margin-inline: -1px;
+  }
+
+  .draw-matrix {
+    min-width: 560px;
+  }
+
+  .draw-matrix th,
+  .draw-matrix td {
+    min-width: 92px;
+    padding: 9px 8px;
+    font-size: 12px;
+  }
+
+  .draw-matrix th:first-child {
+    min-width: 136px;
+  }
+
+  .draw-matrix small {
+    font-size: 11px;
+  }
+
   .draw-matrix-head {
     flex-direction: column;
     align-items: flex-start;
@@ -1137,11 +1182,20 @@ code {
   }
 
   .match-teams {
+    display: grid;
+    grid-template-columns: 1fr;
     align-items: flex-start;
+    gap: 6px;
     font-size: 15px;
   }
 
-  .match-teams span {
-    overflow-wrap: anywhere;
+  .match-teams b {
+    justify-self: start;
+  }
+
+  .match-team-name {
+    display: block;
+    width: 100%;
+    line-height: 1.45;
   }
 }

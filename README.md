@@ -12,11 +12,9 @@ npm run dev
 
 ## 환경변수
 
-`.env.example`을 참고해 기본 조회 클럽과 기본 지역을 설정합니다. 화면에서는 지역과 클럽명을 매번 바꿔 조회할 수 있습니다.
+`.env.example`을 참고해 데이터 수집 범위를 설정합니다. 화면의 지역과 클럽명은 최초 접속 시 비워두며, 사용자가 조회할 때마다 직접 선택하거나 입력합니다.
 
 ```bash
-BKPLAY_CLUB_NAME=마코클럽
-BKPLAY_PROVINCE_ORG_ID=3
 BKPLAY_PROVINCE_ORG_IDS=2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
 BKPLAY_LOOKBACK_DAYS=30
 BKPLAY_LOOKAHEAD_DAYS=30
