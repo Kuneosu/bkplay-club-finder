@@ -4,6 +4,7 @@
   --surface: #ffffff;
   --surface-soft: #eef3f1;
   --ink: #15201c;
+  --text: #15201c;
   --muted: #65736d;
   --line: #d9e1de;
   --accent: #13795b;
@@ -918,6 +919,16 @@ code {
     padding-top: 20px;
   }
 
+  .refresh-box {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .refresh-box strong,
+  .summary-band strong {
+    overflow-wrap: anywhere;
+  }
+
   .topbar,
   .toolbar,
   .card-head,
@@ -934,33 +945,177 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .summary-band > div {
+    padding: 14px;
+  }
+
+  .summary-band strong {
+    font-size: 22px;
+  }
+
+  .search-panel {
+    padding: 14px;
+  }
+
   .data-meta-panel {
     grid-template-columns: 1fr;
+  }
+
+  .data-meta-disclosure summary {
+    flex-wrap: wrap;
+    gap: 6px 10px;
   }
 
   .search-panel form {
     grid-template-columns: 1fr;
   }
 
+  .toolbar {
+    gap: 8px;
+  }
+
+  .segmented {
+    width: 100%;
+    grid-auto-flow: unset;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  }
+
+  .segmented button {
+    min-width: 0;
+    padding: 0 8px;
+  }
+
   .meta-grid {
     grid-template-columns: 64px 1fr;
   }
 
+  .tournament-list-card {
+    gap: 14px;
+    padding: 16px;
+  }
+
   .list-card-head {
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .list-card-head strong {
+    font-size: 18px;
   }
 
   .list-card-meta {
     grid-template-columns: 48px 1fr;
   }
 
-  .segmented {
-    grid-auto-flow: row;
+  .participant-inline-list {
+    display: grid;
+    gap: 7px;
+  }
+
+  .participant-inline-item {
+    display: grid;
+    gap: 2px;
+  }
+
+  .participant-inline-item small {
+    line-height: 1.4;
+  }
+
+  .participant-table-wrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .participant-table {
+    min-width: 0;
+  }
+
+  .participant-table,
+  .participant-table thead,
+  .participant-table tbody,
+  .participant-table tr,
+  .participant-table th,
+  .participant-table td {
+    display: block;
+  }
+
+  .participant-table thead {
+    display: none;
+  }
+
+  .participant-table tbody {
+    display: grid;
+    gap: 8px;
+  }
+
+  .participant-table tbody tr {
+    display: grid;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .participant-table th,
+  .participant-table td {
+    border-bottom: 0;
+    padding: 0;
+  }
+
+  .participant-table td {
+    display: grid;
+    grid-template-columns: 86px 1fr;
+    gap: 10px;
+    align-items: baseline;
+    font-size: 13px;
+  }
+
+  .participant-table td::before {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .participant-table td:nth-child(1)::before {
+    content: "대진";
+  }
+
+  .participant-table td:nth-child(2)::before {
+    content: "참가자";
+  }
+
+  .participant-table td:nth-child(3)::before {
+    content: "클럽 선수";
+  }
+
+  .participant-table td:nth-child(4)::before {
+    content: "팀";
+  }
+
+  .participant-table td:nth-child(5)::before {
+    content: "구분";
   }
 
   .draw-toggle {
     flex-direction: column;
     align-items: stretch;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .draw-head h3 {
+    font-size: 16px;
+  }
+
+  .draw-matrix-wrap,
+  .match-list {
+    padding: 12px;
+  }
+
+  .draw-matrix-head {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .draw-summary {
@@ -983,5 +1138,18 @@ code {
     border-right: 0;
     border-bottom: 1px solid var(--line);
     padding: 0 0 12px;
+  }
+
+  .match-timebox strong {
+    font-size: 22px;
+  }
+
+  .match-teams {
+    align-items: flex-start;
+    font-size: 15px;
+  }
+
+  .match-teams span {
+    overflow-wrap: anywhere;
   }
 }
