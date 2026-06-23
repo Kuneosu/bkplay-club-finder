@@ -253,7 +253,10 @@ export function buildClubIndex(tournaments: TournamentData[], generatedAt: strin
 
 export async function buildStaticData(options?: { now?: Date; config?: PrebuildConfig }): Promise<StaticDataBuildResult> {
   const config = options?.config || createPrebuildConfig();
-  const generatedAt = new Date().toISOString();
+  const now = options?.now || new Date();
+  const generatedAt = now.toISOString();
+  const searchStartDate = toBkplayDate(addDays(now, -config.lookbackDays));
+  const searchEndDate = toBkplayDate(addDays(now, config.lookaheadDays));
   const errors: string[] = [];
   const scannedCategoryRef = { value: 0 };
   const tournamentMap = new Map<string, TournamentData>();
@@ -266,7 +269,7 @@ export async function buildStaticData(options?: { now?: Date; config?: PrebuildC
       continue;
     }
 
-    const tournamentList = await loadTournamentListForProvince(provinceOrgId, config, errors, options?.now);
+    const tournamentList = await loadTournamentListForProvince(provinceOrgId, config, errors, now);
     scannedTournaments += tournamentList.length;
 
     for (const tournament of tournamentList) {
@@ -300,6 +303,8 @@ export async function buildStaticData(options?: { now?: Date; config?: PrebuildC
         provinceOrgIds: config.provinceOrgIds,
         lookbackDays: config.lookbackDays,
         lookaheadDays: config.lookaheadDays,
+        searchStartDate,
+        searchEndDate,
         maxPages: config.maxPages,
         maxTournaments: config.maxTournaments,
         maxCategories: config.maxCategories

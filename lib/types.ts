@@ -114,6 +114,8 @@ export type StaticDataManifest = {
     provinceOrgIds: string[];
     lookbackDays: number;
     lookaheadDays: number;
+    searchStartDate?: string;
+    searchEndDate?: string;
     maxPages: number;
     maxTournaments: number;
     maxCategories: number;

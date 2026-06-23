@@ -181,6 +181,34 @@ h1 {
   font-size: 13px;
 }
 
+.data-meta-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(320px, 1.1fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--line);
+  margin-bottom: 18px;
+}
+
+.data-meta-panel > div {
+  padding: 14px 16px;
+  background: #fbfcfc;
+}
+
+.data-meta-panel span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.data-meta-panel strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -804,6 +832,10 @@ code {
 
   .summary-band {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .data-meta-panel {
+    grid-template-columns: 1fr;
   }
 
   .search-panel form {

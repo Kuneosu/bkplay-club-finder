@@ -11,7 +11,7 @@ import type {
   TournamentData,
   TournamentResult
 } from "@/lib/types";
-import { toKoreanDateTime } from "@/lib/date";
+import { addDays, formatBkplayDate, toKoreanBasisDateTime, toKoreanDate } from "@/lib/date";
 import { BKPLAY_PROVINCES, formatProvinceScope, getProvinceByOrgId } from "@/lib/regions";
 import { buildSnapshotFromStaticData, filterClubIndexEntries } from "@/lib/static-search";
 
@@ -89,6 +89,28 @@ async function searchStaticData(clubName: string, provinceOrgId: string) {
     lookaheadDays: manifest.scope.lookaheadDays,
     errors: manifest.errors
   });
+}
+
+function formatNumber(value?: number) {
+  return typeof value === "number" ? new Intl.NumberFormat("ko-KR").format(value) : "-";
+}
+
+function getCollectionRangeText(manifest: StaticDataManifest | null) {
+  if (!manifest) return "-";
+
+  if (manifest.scope.searchStartDate && manifest.scope.searchEndDate) {
+    return `${formatBkplayDate(manifest.scope.searchStartDate)} ~ ${formatBkplayDate(manifest.scope.searchEndDate)}`;
+  }
+
+  if (!manifest.generatedAt) return "-";
+  const generatedAt = new Date(manifest.generatedAt);
+  if (Number.isNaN(generatedAt.getTime())) {
+    return `과거 ${manifest.scope.lookbackDays}일 ~ 미래 ${manifest.scope.lookaheadDays}일`;
+  }
+
+  return `${toKoreanDate(addDays(generatedAt, -manifest.scope.lookbackDays))} ~ ${toKoreanDate(
+    addDays(generatedAt, manifest.scope.lookaheadDays)
+  )}`;
 }
 
 function isActiveTournament(tournament: TournamentResult) {
@@ -619,8 +641,8 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
           <h1>클럽 대진표 조회</h1>
         </div>
         <div className="refresh-box">
-          <span>최근 수집</span>
-          <strong>{toKoreanDateTime(manifest?.generatedAt || latestSnapshot?.refreshedAt)}</strong>
+          <span>데이터 기준</span>
+          <strong>{toKoreanBasisDateTime(manifest?.generatedAt || latestSnapshot?.refreshedAt)}</strong>
         </div>
       </header>
 
@@ -652,6 +674,20 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
           </button>
         </form>
         <p>GitHub Actions가 미리 수집한 데이터에서 입력한 클럽명이 포함된 대진을 조회합니다.</p>
+      </section>
+
+      <section className="data-meta-panel" aria-label="수집 데이터 정보">
+        <div>
+          <span>수집 기간</span>
+          <strong>{getCollectionRangeText(manifest)}</strong>
+        </div>
+        <div>
+          <span>전체 수집 데이터</span>
+          <strong>
+            대회 {formatNumber(manifest?.stats.tournamentCount)}개 · 대진 {formatNumber(manifest?.stats.drawCount)}개 · 클럽{" "}
+            {formatNumber(manifest?.stats.clubCount)}개
+          </strong>
+        </div>
       </section>
 
       <section className="summary-band">
