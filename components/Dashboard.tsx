@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type MouseEvent, useEffect, useMemo, useState } from "react";
 import type {
   ClubDraw,
   ClubIndex,
@@ -52,6 +52,8 @@ const TOURNAMENT_QUERY_PARAM = "tournament";
 const DATA_MISSING_MESSAGE = "수집된 데이터가 없습니다. GitHub Actions 또는 npm run data:refresh로 데이터를 생성해 주세요.";
 const DATA_SOURCE_TEXT = "BKPLAY 지역별 대회정보";
 const DEFAULT_REFRESH_TIMES_KST = ["10:00", "14:00", "18:00"];
+const APP_VERSION = "0.1.0";
+const BUG_REPORT_EMAIL = "kuneosu@gmail.com";
 
 function getTournamentIdFromLocation() {
   if (typeof window === "undefined") return null;
@@ -101,6 +103,23 @@ async function fetchStaticJson<T>(path: string): Promise<T> {
 
 async function loadManifest() {
   return fetchStaticJson<StaticDataManifest>("/data/manifest.json");
+}
+
+async function copyTextToClipboard(text: string) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textarea);
 }
 
 async function searchStaticData(clubName: string, provinceOrgId: string) {
@@ -721,6 +740,7 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
   const [isSearching, setIsSearching] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(() => getTournamentIdFromLocation());
+  const [copyToastMessage, setCopyToastMessage] = useState<string | null>(null);
   const clubName = latestSnapshot?.scope.clubName || clubInput.trim() || initialClubName;
   const selectedProvince = getProvinceByOrgId(provinceOrgId) || getProvinceByOrgId(initialProvinceOrgId);
 
@@ -758,6 +778,18 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!copyToastMessage) return;
+
+    const timer = window.setTimeout(() => {
+      setCopyToastMessage(null);
+    }, 1800);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [copyToastMessage]);
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -814,12 +846,26 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  async function handleCopyBugReportEmail(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+
+    try {
+      await copyTextToClipboard(BUG_REPORT_EMAIL);
+      setCopyToastMessage("이메일이 복사되었습니다.");
+    } catch {
+      setCopyToastMessage(`복사에 실패했습니다. ${BUG_REPORT_EMAIL}`);
+    }
+  }
+
   return (
     <main className="page">
       <header className="topbar">
         <div>
           <p className="eyebrow">BKPLAY 지역 대회</p>
-          <h1>클럽 대진표 조회</h1>
+          <div className="title-row">
+            <h1>클럽 대진표 조회</h1>
+            <span className="beta-badge">BETA</span>
+          </div>
         </div>
         <div className="refresh-box">
           <span>데이터 기준</span>
@@ -953,6 +999,25 @@ export default function Dashboard({ initialClubName, initialProvinceOrgId }: Pro
           <EmptyState hasSnapshot={Boolean(latestSnapshot)} />
         )}
       </section>
+      <footer className="site-footer">
+        <div className="footer-meta">
+          <span>Copyright 2026 Kuneosu</span>
+          <span>v{APP_VERSION}</span>
+        </div>
+        <div className="footer-actions">
+          <a href="https://github.com/Kuneosu/bkplay-club-finder" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+          <a className="footer-copy-link" href={`mailto:${BUG_REPORT_EMAIL}`} onClick={handleCopyBugReportEmail}>
+            버그 제보: {BUG_REPORT_EMAIL}
+          </a>
+        </div>
+      </footer>
+      {copyToastMessage ? (
+        <div className="copy-toast" role="status" aria-live="polite">
+          {copyToastMessage}
+        </div>
+      ) : null}
     </main>
   );
 }

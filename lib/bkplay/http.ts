@@ -34,7 +34,7 @@ export async function fetchBkplayHtml(url: string, timeoutMs = 20000) {
       signal: controller.signal,
       cache: "no-store",
       headers: {
-        "user-agent": "QUICK-BK club schedule crawler (+https://sfa.bkplay.kr)",
+        "user-agent": "BKPLAY-CLUB-FINDER club schedule crawler (+https://github.com/Kuneosu/bkplay-club-finder)",
         accept: "text/html,application/xhtml+xml",
         "accept-language": "ko-KR,ko;q=0.9"
       }

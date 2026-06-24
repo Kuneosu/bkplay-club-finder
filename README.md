@@ -1,7 +1,8 @@
-# QUICK-BK
+# BKPLAY-CLUB-FINDER
 
 BKPLAY 지역별 대회에서 입력한 클럽명이 포함된 대진표를 빠르게 조회하는 웹앱입니다.
 BKPLAY HTML 수집과 파싱은 GitHub Actions 또는 로컬 `data:refresh`에서 미리 수행하고, 사이트는 `public/data`의 정적 JSON만 읽습니다.
+이 프로젝트는 BKPLAY 공식 서비스가 아니며, BKPLAY와 제휴되어 있지 않습니다.
 
 ## 실행
 
@@ -57,3 +58,13 @@ npm run lint
 npm run test
 npm run build
 ```
+
+## 데이터 소스 및 이용 제한
+
+대회 목록, 대진표, 경기 일정 등 원천 데이터의 출처는 BKPLAY 지역별 대회정보입니다.
+이 저장소는 해당 데이터를 더 쉽게 조회하기 위한 개인·비상업 목적의 보조 도구이며, BKPLAY 데이터 자체에 대한 권리를 주장하지 않습니다.
+
+BKPLAY 데이터와 서비스명, 화면, HTML, 대회 정보의 권리는 각 권리자에게 있습니다.
+데이터 소스가 BKPLAY에 있으므로 이 프로젝트와 수집 데이터를 활용한 상업적 이용, 유료 서비스 운영, 재판매, 광고·영리 목적 제공은 허용하지 않습니다.
+
+자세한 이용 조건은 [LICENSE](./LICENSE)를 확인하세요.
