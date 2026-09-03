@@ -31,7 +31,7 @@ function parseFixture(html = fixture) {
 }
 
 describe("BKPLAY 대진 파서", () => {
-  it("3879/99262 샘플에서 마코클럽 포함 대진과 순위표를 추출한다", () => {
+  it("TC-015 3879/99262 샘플에서 마코클럽 포함 대진과 순위표를 추출한다", () => {
     const draw = parseFixture();
 
     expect(draw).not.toBeNull();
@@ -70,13 +70,13 @@ describe("BKPLAY 대진 파서", () => {
     });
   });
 
-  it("마코클럽이 없는 대진 HTML은 결과에서 제외한다", () => {
+  it("TC-015 마코클럽이 없는 대진 HTML은 결과에서 제외한다", () => {
     const html = fixture.replaceAll("마코클럽", "남천클럽");
 
     expect(parseFixture(html)).toBeNull();
   });
 
-  it("대진 공개 전 HTML은 공개 전 상태로 판단하고 종목도 수집하지 않는다", () => {
+  it("TC-015 대진 공개 전 HTML은 공개 전 상태로 판단하고 종목도 수집하지 않는다", () => {
     const html = "<script>if ('false' === 'false') { alert('대진표 공개 전입니다.'); }</script>";
 
     expect(isDrawPublished(html)).toBe(false);

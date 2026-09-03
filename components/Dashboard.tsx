@@ -38,6 +38,9 @@ type MatrixTeam = {
 type MatrixCell = {
   score?: string;
   status?: string;
+  time?: string;
+  court?: string;
+  matchNo?: string;
   includesClub: boolean;
 };
 type ClubParticipant = {
@@ -517,6 +520,9 @@ function buildMatrixCells(draw: ClubDraw, teams: MatrixTeam[], clubName: string)
     const cell = {
       score: match.score,
       status: match.status,
+      time: display.time,
+      court: display.court,
+      matchNo: display.matchNo,
       includesClub:
         teams[firstIndex].includesClub ||
         teams[secondIndex].includesClub ||
@@ -566,6 +572,7 @@ function DrawMatrix({ draw, clubName }: { draw: ClubDraw; clubName: string }) {
                 {teams.map((columnTeam, columnIndex) => {
                   const cell = cells.get(`${rowIndex}:${columnIndex}`);
                   const isSelf = rowIndex === columnIndex;
+                  const schedule = cell ? [cell.court, cell.matchNo].filter(Boolean).join(" · ") : "";
 
                   return (
                     <td key={`${rowTeam.key}-${columnTeam.key}`} className={cell?.includesClub ? "matrix-match-club" : ""}>
@@ -573,8 +580,14 @@ function DrawMatrix({ draw, clubName }: { draw: ClubDraw; clubName: string }) {
                         <span className="matrix-self">-</span>
                       ) : cell ? (
                         <>
-                          <strong>{cell.score || "예정"}</strong>
-                          {cell.status ? <small>{cell.status}</small> : null}
+                          <strong className={cell.score ? "" : "matrix-time"}>{cell.score || cell.time || "일정 미정"}</strong>
+                          {cell.score ? (
+                            cell.status ? <small>{cell.status}</small> : null
+                          ) : schedule ? (
+                            <small className="matrix-schedule">{schedule}</small>
+                          ) : cell.status ? (
+                            <small>{cell.status}</small>
+                          ) : null}
                         </>
                       ) : (
                         <span className="matrix-empty">-</span>

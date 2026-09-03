@@ -84,7 +84,7 @@ describe("정적 데이터 검색", () => {
     expect(normalizeClubSearchKey(" 마코 클럽 ")).toBe("마코클럽");
   });
 
-  it("클럽 인덱스를 만들고 지역별 항목을 필터링한다", () => {
+  it("TC-006 클럽 인덱스를 만들고 지역별 항목을 필터링한다", () => {
     const index = buildClubIndex([tournament], "2026-06-23T00:00:00.000Z");
 
     expect(filterClubIndexEntries(index, "마코클럽", "3")).toHaveLength(1);

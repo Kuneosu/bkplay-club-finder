@@ -775,8 +775,18 @@ h1 {
   font-size: 14px;
 }
 
+.draw-matrix td .matrix-time {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
 .draw-matrix td small {
   margin-top: 3px;
+}
+
+.draw-matrix td .matrix-schedule {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .matrix-club {
